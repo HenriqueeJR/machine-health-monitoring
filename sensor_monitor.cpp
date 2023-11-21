@@ -33,6 +33,25 @@ int main(int argc, char* argv[]) {
     gethostname(hostname, 1024);
     std::string machineId(hostname);
 
+    nlohmann::json j_sensor1;
+    j_sensor1["sensor_id"] = "124";
+    j_sensor1["data_type"] = "naosei";
+    j_sensor1["data_interval"] = "random1";
+
+    nlohmann::json j_sensor2;
+    j_sensor2["sensor_id"] = "1242";
+    j_sensor2["data_type"] = "naosei2";
+    j_sensor2["data_interval"] = "random2";
+
+    nlohmann::json j_inicial;
+    j_inicial["machine_id"] = machineId;
+    j_inicial["sensors"] = {j_sensor1, j_sensor2};
+
+    std::string topic_inicial = "/sensor_monitors";
+    mqtt::message msg_inicial(topic_inicial, j_inicial.dump(), QOS, false);
+    //std::clog << "message published - topic: " << topic_inicial << " - message: " << j_inicial.dump() << std::endl;
+    client.publish(msg_inicial);
+
     while (true) {
        // Get the current time in ISO 8601 format.
         auto now = std::chrono::system_clock::now();
@@ -51,13 +70,17 @@ int main(int argc, char* argv[]) {
         j["value"] = value;
 
         // Publish the JSON message to the appropriate topic.
-        std::string topic = "/sensors/" + machineId + "/rand";
+        std::string topic = "/sensor_monitors/" + machineId + "/rand";
         mqtt::message msg(topic, j.dump(), QOS, false);
         std::clog << "message published - topic: " << topic << " - message: " << j.dump() << std::endl;
         client.publish(msg);
 
         // Sleep for some time.
         std::this_thread::sleep_for(std::chrono::seconds(1));
+
+
+
+
     }
 
     return EXIT_SUCCESS;

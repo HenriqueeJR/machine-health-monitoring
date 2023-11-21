@@ -36,6 +36,17 @@ int main(int argc, char* argv[]) {
         void message_arrived(mqtt::const_message_ptr msg) override {
             auto j = nlohmann::json::parse(msg->get_payload());
 
+            std::cout << msg->get_payload() << std::endl;
+
+            if (msg->get_topic() == "/sensor_monitors") {
+                std::string new_machine_id = j["machine_id"];
+                std::string new_sensor_id = j["machine_id"];
+
+                client.subscribe("/sensor_monitors/" + new_machine_id + /<id_do_sensor>, QOS);
+            }
+
+            else {
+
             std::string topic = msg->get_topic();
             auto topic_parts = split(topic, '/');
             std::string machine_id = topic_parts[2];
@@ -44,6 +55,7 @@ int main(int argc, char* argv[]) {
             std::string timestamp = j["timestamp"];
             int value = j["value"];
             post_metric(machine_id, sensor_id, timestamp, value);
+            }
         }
     };
 
@@ -56,8 +68,8 @@ int main(int argc, char* argv[]) {
     connOpts.set_clean_session(true);
 
     try {
-        client.connect(connOpts);
-        client.subscribe("/sensors/#", QOS);
+        client.connect(connOpts)->wait();
+        client.subscribe("/sensor_monitors", QOS);
     } catch (mqtt::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
