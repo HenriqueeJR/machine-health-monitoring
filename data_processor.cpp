@@ -37,12 +37,28 @@ int main(int argc, char* argv[]) {
             auto j = nlohmann::json::parse(msg->get_payload());
 
             std::cout << msg->get_payload() << std::endl;
+            
 
             if (msg->get_topic() == "/sensor_monitors") {
+                
+                
                 std::string new_machine_id = j["machine_id"];
-                std::string new_sensor_id = j["machine_id"];
+                
+                std::string new_sensor1_id = j["sensors"][0]["sensor_id"];
+                std::string new_sensor1_data_type = j["sensors"][0]["data_type"];
+                std::string new_sensor1_interval = j["sensors"][0]["data_interval"];
 
-                client.subscribe("/sensor_monitors/" + new_machine_id + /<id_do_sensor>, QOS);
+                std::string new_sensor2_id = j["sensors"][1]["sensor_id"];
+                std::string new_sensor2_data_type = j["sensors"][1]["data_type"];
+                std::string new_sensor2_interval = j["sensors"][1]["data_interval"];
+
+                std::string topic1 = "/sensor_monitors/" + new_machine_id + new_sensor1_id;
+                std::string topic2 = "/sensor_monitors/" + new_machine_id + new_sensor2_id;
+
+                client.subscribe(topic1, QOS);
+                client.subscribe(topic2, QOS);
+                
+
             }
 
             else {

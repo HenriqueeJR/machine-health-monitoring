@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
         j["value"] = value;
 
         // Publish the JSON message to the appropriate topic.
-        std::string topic = "/sensor_monitors/" + machineId + "/rand";
+        std::string topic = "/sensor_monitors/" + machineId + "124";
         mqtt::message msg(topic, j.dump(), QOS, false);
         std::clog << "message published - topic: " << topic << " - message: " << j.dump() << std::endl;
         client.publish(msg);
