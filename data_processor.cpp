@@ -48,11 +48,11 @@ int main(int argc, char* argv[]) {
                 
                 std::string new_sensor1_id = j["sensors"][0]["sensor_id"];
                 std::string new_sensor1_data_type = j["sensors"][0]["data_type"];
-                std::string new_sensor1_interval = j["sensors"][0]["data_interval"];
+                int new_sensor1_interval = j["sensors"][0]["data_interval"];
 
                 std::string new_sensor2_id = j["sensors"][1]["sensor_id"];
                 std::string new_sensor2_data_type = j["sensors"][1]["data_type"];
-                std::string new_sensor2_interval = j["sensors"][1]["data_interval"];
+                int new_sensor2_interval = j["sensors"][1]["data_interval"];
 
                 std::string topic1 = "/sensor_monitors/" + new_machine_id + new_sensor1_id;
                 std::string topic2 = "/sensor_monitors/" + new_machine_id + new_sensor2_id;
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
             std::string sensor_id = topic_parts[3];
 
             std::string timestamp = j["timestamp"];
-            int value = j["value"];
+            double value = j["value"];
             post_metric(machine_id, sensor_id, timestamp, value);
             }
         }
