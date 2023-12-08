@@ -19,6 +19,27 @@ mqtt::client client(BROKER_ADDRESS, clientId);
 
 std::mutex m;
 
+double get_cpu_frequency() {
+    std::ifstream cpuinfoFile("/proc/cpuinfo");
+    std::string line;
+    double frequency = 0;
+
+    if (cpuinfoFile.is_open()) {
+        while (std::getline(cpuinfoFile, line)) {
+            if (line.find("cpu MHz") != std::string::npos) {
+                size_t pos = line.find(":");
+                if (pos != std::string::npos) {
+                    std::string freqStr = line.substr(pos + 1);
+                    frequency = std::stod(freqStr);
+                    break; // Assuming all cores have the same frequency
+                }
+            }
+        }
+        cpuinfoFile.close();
+    }
+    return(frequency);
+}
+
 double get_cpu_usage() {
     std::ifstream statFile("/proc/stat");
     std::string line;
@@ -41,8 +62,6 @@ double get_cpu_usage() {
 
                 unsigned long totalTime = user + nice + system + idle;
                 cpuUsage = 100.0 * (totalTime - idle) / totalTime;
-
-                std::cout << "CPU Usage: " << cpuUsage << "%" << std::endl;
             }
         }
     }
@@ -61,13 +80,21 @@ void read_and_publish_sensor(std::string machineId, std::string sensorId, int da
     ss << std::put_time(now_tm, "%FT%TZ");
     std::string timestamp = ss.str();
 
-    // Generate a random value.
-    double cpu_usage = get_cpu_usage();
+    double value = 0;
+
+    if(sensorId == "sensor1") {
+        value = get_cpu_frequency();
+    }
+    else if(sensorId == "sensor2") {
+        value = get_cpu_usage();
+    }
+    
+    
 
     // Construct the JSON message.
     nlohmann::json j;
     j["timestamp"] = timestamp;
-    j["value"] = cpu_usage;
+    j["value"] = value;
 
     // Publish the JSON message to the appropriate topic.
     std::string topic = "/sensor_monitors/" + machineId + sensorId;
