@@ -65,15 +65,25 @@ int main(int argc, char* argv[]) {
         int value = rand();
 
         // Construct the JSON message.
-        nlohmann::json j;
-        j["timestamp"] = timestamp;
-        j["value"] = value;
+        nlohmann::json j1;
+        j1["timestamp"] = timestamp;
+        j1["value"] = value;
 
+
+        nlohmann::json j2;
+        j2["timestamp"] = timestamp;
+        j2["value"] = value;
         // Publish the JSON message to the appropriate topic.
-        std::string topic = "/sensor_monitors/" + machineId + "124";
-        mqtt::message msg(topic, j.dump(), QOS, false);
-        std::clog << "message published - topic: " << topic << " - message: " << j.dump() << std::endl;
-        client.publish(msg);
+        std::string topic1 = "/sensor_monitors/" + machineId + "124";
+        mqtt::message msg1(topic1, j1.dump(), QOS, false);
+        std::clog << "message published - topic: " << topic1 << " - message: " << j1.dump() << std::endl;
+
+        std::string topic2 = "/sensor_monitors/" + machineId + "1242";
+        mqtt::message msg2(topic2, j2.dump(), QOS, false);
+
+        std::clog << "message published - topic: " << topic2 << " - message: " << j2.dump() << std::endl;
+        client.publish(msg1);
+        client.publish(msg2);
 
         // Sleep for some time.
         std::this_thread::sleep_for(std::chrono::seconds(1));

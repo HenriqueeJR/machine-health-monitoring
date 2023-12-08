@@ -25,9 +25,10 @@ std::vector<std::string> split(const std::string &str, char delim) {
     return tokens;
 }
 
+std::string clientId = "clientId";
+mqtt::async_client client(BROKER_ADDRESS, clientId);
+
 int main(int argc, char* argv[]) {
-    std::string clientId = "clientId";
-    mqtt::async_client client(BROKER_ADDRESS, clientId);
 
     // Create an MQTT callback.
     class callback : public virtual mqtt::callback {
@@ -36,7 +37,8 @@ int main(int argc, char* argv[]) {
         void message_arrived(mqtt::const_message_ptr msg) override {
             auto j = nlohmann::json::parse(msg->get_payload());
 
-            std::cout << msg->get_payload() << std::endl;
+            std::cout << "topico: " << msg->get_topic() << "    payload: " << msg->get_payload() << std::endl;
+
             
 
             if (msg->get_topic() == "/sensor_monitors") {
@@ -74,6 +76,8 @@ int main(int argc, char* argv[]) {
             }
         }
     };
+
+    
 
     callback cb;
     client.set_callback(cb);
