@@ -97,7 +97,7 @@ void read_and_publish_sensor(std::string machineId, std::string sensorId, int da
     j["value"] = value;
 
     // Publish the JSON message to the appropriate topic.
-    std::string topic = "/sensor_monitors/" + machineId + sensorId;
+    std::string topic = "/sensor_monitors/" + machineId + "/" + sensorId;
     mqtt::message msg(topic, j.dump(), QOS, false);
     std::clog << "message published - topic: " << topic << " - message: " << j.dump() << std::endl;
 
