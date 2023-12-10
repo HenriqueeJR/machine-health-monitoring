@@ -5,6 +5,8 @@
 #include <mutex>
 #include <unistd.h>
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include "json.hpp" 
 #include "mqtt/client.h" 
 
@@ -17,6 +19,36 @@ std::mutex m;
 
 void post_metric(const std::string& machine_id, const std::string& sensor_id, const std::string& timestamp_str, const int value) {
 
+    void post_metric(const std::string& machine_id, const std::string& sensor_id, const std::string& timestamp_str, const int value) {
+    std::string path = machine_id + '.' + sensor_id;
+    std::string metric = path + " " + std::to_string(value) + " " + timestamp_str + "\n";
+
+    int sockfd;
+    struct sockaddr_in serv_addr;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        std::cerr << "Erro ao criar o socket" << std::endl;
+        return;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(GRAPHITE_PORT);
+    inet_pton(AF_INET, GRAPHITE_HOST, &(serv_addr.sin_addr));
+
+    if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        std::cerr << "Erro ao conectar ao servidor Graphite" << std::endl;
+        close(sockfd);
+        return;
+    }
+
+    if (send(sockfd, metric.c_str(), metric.length(), 0) < 0) {
+        std::cerr << "Erro ao enviar dados para o servidor Graphite" << std::endl;
+    }
+
+    close(sockfd);
+
+}
 }
 
 std::vector<std::string> split(const std::string &str, char delim) {
@@ -36,20 +68,56 @@ mqtt::async_client client(BROKER_ADDRESS, clientId);
 //encadeado como: {id_do_sensor: ultimo_timestamp}
 std::map<std::string, std::string> actual_timestamps;
 
-void monitor_sensor_inactivity(std::string sensorId, int data_interval) {
-    while(1) {
+// void monitor_sensor_inactivity(std::string sensorId, int data_interval) {
+//     while(1) {
         
-        std::cout << actual_timestamps[sensorId] << std::endl;
-        auto timestamp_parts = split(actual_timestamps[sensorId], 'T');
-        std::string time = timestamp_parts[1];
-        auto time_parts = split(time, ':');
-        std::cout << time_parts[2] << std::endl;
+//         std::cout << actual_timestamps[sensorId] << std::endl;
+//         auto timestamp_parts = split(actual_timestamps[sensorId], 'T');
+//         std::string time = timestamp_parts[1];
+//         auto time_parts = split(time, ':');
+//         std::cout << time_parts[2] << std::endl;
        
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+//         std::this_thread::sleep_for(std::chrono::seconds(1));
         
-    }
+//     }
     
+// }
+void monitor_sensor_inactivity(std::string sensorId, int data_interval) {
+    bool data_received = true;
+    int count = 0; // Contador de tempo sem dados
+
+
+    while (true) {
+        auto last_timestamp = actual_timestamps[sensorId]; // Obtém o timestamp inicial
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(data_interval)); // Aguarda 1 intervalo
+
+        m.lock(); // Bloqueia o mutex para acessar actual_timestamps
+        auto current_timestamp = actual_timestamps[sensorId];
+        m.unlock(); // Libera o mutex
+
+        if (current_timestamp == last_timestamp) {
+            data_received = false;
+            count++;
+
+            if (count == 10) {
+                std::cout << "Não houve recebimento de dados do "<<sensorId << " por 10 intervalos!" << std::endl;
+                
+                count = 0;
+            }
+        } else {
+            data_received = true;
+            count = 0;
+        }
+
+
+        if (data_received) {
+            std::cout << "Dados do sensor " << sensorId << " estão sendo recebidos." << std::endl;
+        }
+    }
 }
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -86,12 +154,12 @@ int main(int argc, char* argv[]) {
                 client.subscribe(topic2, QOS);
 
                 actual_timestamps.insert_or_assign(new_sensor1_id, "0T00:00:00");
-                //actual_timestamps.insert_or_assign(new_sensor2_id, "0");
+                actual_timestamps.insert_or_assign(new_sensor2_id, "0");
 
                 std::thread m_i_1(monitor_sensor_inactivity, new_sensor1_id , new_sensor1_interval);
                 m_i_1.detach();
-                //std::thread m_i_2(monitor_sensor_inactivity, new_sensor2_id, new_sensor2_interval);
-                //m_i_2.detach();
+                std::thread m_i_2(monitor_sensor_inactivity, new_sensor2_id, new_sensor2_interval);
+                m_i_2.detach();
             
 
             }

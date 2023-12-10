@@ -110,7 +110,13 @@ void read_and_publish_sensor(std::string machineId, std::string sensorId, int da
 }
 
 int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        std::cerr << "Uso: " << argv[0] << " <data_interval1> <data_interval2>" << std::endl;
+        return EXIT_FAILURE;
+    }
 
+    int data_interval1 = std::atoi(argv[1]);
+    int data_interval2 = std::atoi(argv[2]);
     // Connect to the MQTT broker.
     mqtt::connect_options connOpts;
     connOpts.set_keep_alive_interval(20);
@@ -131,17 +137,14 @@ int main(int argc, char* argv[]) {
     std::string sensor_id1 = "sensor1";
     std::string sensor_id2 = "sensor2";
 
-    int data_interval1 = 1000;
-    int data_interval2 = 1500;
-
     nlohmann::json j_sensor1;
     j_sensor1["sensor_id"] = sensor_id1;
-    j_sensor1["data_type"] = "naosei1";
+    j_sensor1["data_type"] = "cpu_frequency";
     j_sensor1["data_interval"] = data_interval1;
 
     nlohmann::json j_sensor2;
     j_sensor2["sensor_id"] = sensor_id2;
-    j_sensor2["data_type"] = "naosei2";
+    j_sensor2["data_type"] = "cpu_usage";
     j_sensor2["data_interval"] = data_interval2;
 
     nlohmann::json j_inicial;
@@ -155,7 +158,7 @@ int main(int argc, char* argv[]) {
 
     
     std::thread t_sensor1(read_and_publish_sensor, machineId, sensor_id1, data_interval1);
-    std::thread t_sensor2(read_and_publish_sensor, machineId, sensor_id2, data_interval1);
+    std::thread t_sensor2(read_and_publish_sensor, machineId, sensor_id2, data_interval2);
 
     t_sensor1.join();
     t_sensor2.join();
