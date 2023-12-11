@@ -1,16 +1,21 @@
 {
 	"name": "C++",
+	
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"customizations": {
 		"vscode": {
+			"dockerFile": "Dockerfile",
+			"runArgs": ["--network=host"],
+
 			"settings": {
 				"terminal.integrated.shell.linux": "/bin/bash"
 			},
 			"extensions": [
 				"ms-vscode.cpptools",
 				"ms-vscode.cmake-tools",
-				"mongodb.mongodb-vscode"
+				"mongodb.mongodb-vscode",
+				"ms-azuretools.vscode-docker"
 			]
 		}
 	},
@@ -24,4 +29,8 @@
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
 	]
+
+
 }
+
+

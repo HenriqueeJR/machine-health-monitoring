@@ -59,3 +59,7 @@ USER $USERNAME
 
 # Set up the working directory
 WORKDIR /workspace
+
+FROM graphiteapp/graphite-statsd
+EXPOSE 80 2003-2004 2023-2024 8125/udp 8126
+CMD ["/usr/bin/supervisord"]

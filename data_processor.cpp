@@ -7,21 +7,23 @@
 #include <vector>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include "json.hpp" 
 #include "mqtt/client.h" 
 
 #define QOS 1
 #define BROKER_ADDRESS "tcp://localhost:1883"
-#define GRAPHITE_HOST "graphite"
+#define GRAPHITE_HOST "127.0.0.1"
 #define GRAPHITE_PORT 2003
 
 std::mutex m;
+std::mutex m2;
 
 void post_metric(const std::string& machine_id, const std::string& sensor_id, const std::string& timestamp_str, const int value) {
 
-    void post_metric(const std::string& machine_id, const std::string& sensor_id, const std::string& timestamp_str, const int value) {
+    
     std::string path = machine_id + '.' + sensor_id;
-    std::string metric = path + " " + std::to_string(value) + " " + timestamp_str + "\n";
+    std::string metric = path + " " + std::to_string(value) + " " + timestamp_str;
 
     int sockfd;
     struct sockaddr_in serv_addr;
@@ -41,15 +43,16 @@ void post_metric(const std::string& machine_id, const std::string& sensor_id, co
         close(sockfd);
         return;
     }
+    std::string string_teste = "test_no_codigo.teste 20 20";
 
-    if (send(sockfd, metric.c_str(), metric.length(), 0) < 0) {
+    if (send(sockfd, string_teste.c_str(), string_teste.length(), 0) < 0) {
         std::cerr << "Erro ao enviar dados para o servidor Graphite" << std::endl;
     }
 
     close(sockfd);
 
 }
-}
+
 
 std::vector<std::string> split(const std::string &str, char delim) {
     std::vector<std::string> tokens;
@@ -68,20 +71,6 @@ mqtt::async_client client(BROKER_ADDRESS, clientId);
 //encadeado como: {id_do_sensor: ultimo_timestamp}
 std::map<std::string, std::string> actual_timestamps;
 
-// void monitor_sensor_inactivity(std::string sensorId, int data_interval) {
-//     while(1) {
-        
-//         std::cout << actual_timestamps[sensorId] << std::endl;
-//         auto timestamp_parts = split(actual_timestamps[sensorId], 'T');
-//         std::string time = timestamp_parts[1];
-//         auto time_parts = split(time, ':');
-//         std::cout << time_parts[2] << std::endl;
-       
-//         std::this_thread::sleep_for(std::chrono::seconds(1));
-        
-//     }
-    
-// }
 void monitor_sensor_inactivity(std::string sensorId, int data_interval) {
     bool data_received = true;
     int count = 0; // Contador de tempo sem dados
@@ -127,8 +116,12 @@ int main(int argc, char* argv[]) {
     class callback : public virtual mqtt::callback {
     public:
 
+        
         void message_arrived(mqtt::const_message_ptr msg) override {
+            
             auto j = nlohmann::json::parse(msg->get_payload());
+            
+
 
             //std::cout << "topico: " << msg->get_topic() << "    payload: " << msg->get_payload() << std::endl;
 
@@ -174,11 +167,56 @@ int main(int argc, char* argv[]) {
             std::string timestamp = j["timestamp"];
             double value = j["value"];
     
+            std::string path = machine_id + '.' + sensor_id;
+            std::string metric = path + " " + std::to_string(value) + " " + timestamp;
+
             
-            actual_timestamps.insert_or_assign(sensor_id, timestamp);
+
+            int sockfd;
+            struct sockaddr_in serv_addr;
+
+            
+
+            sockfd = socket(AF_INET, SOCK_STREAM, 0);
+            
+
+            if (sockfd < 0) {
+                std::cerr << "Erro ao criar o socket" << std::endl;
+                return;
+            }
+            
+
+            serv_addr.sin_family = AF_INET;
+            serv_addr.sin_port = htons(GRAPHITE_PORT);
+            
+
+            int v = inet_pton(AF_INET, GRAPHITE_HOST, &(serv_addr.sin_addr));
+            if (v <= 0) std::cout << "deu erro aq";
+            
+            if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+                std::cout << "Erro ao conectar ao servidor Graphite" << std::endl;
+                close(sockfd);
+                return;
+            }
+            
+            
+
+            std::string string_teste = "test_no_codigo.teste 20 20";
+
+            if (send(sockfd, string_teste.c_str(), string_teste.length(), 0) < 0) {
+                std::cerr << "Erro ao enviar dados para o servidor Graphite" << std::endl;
+            }
+
+           close(sockfd);
+            
+            
            
 
-            post_metric(machine_id, sensor_id, timestamp, value);
+            /*std::thread post_t(post_metric, machine_id, sensor_id, timestamp, value);
+            post_t.detach();*/
+            
+            actual_timestamps.insert_or_assign(sensor_id, timestamp);
+            
             }
         }
     };
